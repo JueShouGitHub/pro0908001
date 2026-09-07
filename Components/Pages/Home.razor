@@ -1,5 +1,393 @@
 ﻿@page "/"
 
-<h1>Hello, world!</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>Knife Hit Throw</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+  html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,"Helvetica Neue",system-ui,sans-serif}
+  body{background:#2A1B12;color:#fff;position:fixed;inset:0;touch-action:none}
+  #bg{position:fixed;inset:0;z-index:0;background:linear-gradient(160deg,#3A2418,#2A1B12,#4A2C1A,#241410);background-size:300% 300%;animation:bgS 14s ease-in-out infinite}
+  @@keyframes bgS{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+  .orb{position:fixed;border-radius:999px;opacity:.15;z-index:1;filter:blur(2px)}
+  #o1{width:230px;height:230px;background:#FFD93D;top:-70px;left:-70px}
+  #o2{width:190px;height:190px;background:#FF8A5C;bottom:-60px;right:-60px}
+  #app{position:relative;z-index:5;width:100%;height:100%}
+  .screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;z-index:10;text-align:center}
+  .screen.hidden{display:none}
+  .logo{font-size:4rem;line-height:1;margin-bottom:16px;filter:drop-shadow(0 0 18px rgba(255,217,61,.6));animation:fl 3s ease-in-out infinite}
+  @@keyframes fl{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  .title{font-size:2.4rem;font-weight:900;letter-spacing:3px;background:linear-gradient(90deg,#FFD93D,#FF8A5C,#FF6B9D);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 10px rgba(255,180,80,.4))}
+  .subtitle{color:#D8C0A8;font-size:.95rem;font-weight:600;margin:10px 0 26px}
+  .bestRow{font-size:1rem;font-weight:700;color:#FFD93D;letter-spacing:1px;background:rgba(255,217,61,.12);border:1px solid rgba(255,217,61,.35);padding:8px 20px;border-radius:14px;margin-bottom:28px}
+  .bestRow span{font-size:1.3rem;margin-left:8px}
+  .btn{font:inherit;font-weight:800;font-size:1.15rem;letter-spacing:1px;color:#2A1B12;border:none;border-radius:18px;padding:16px 48px;cursor:pointer;background:linear-gradient(135deg,#FFD93D,#FFB347);box-shadow:0 12px 26px rgba(255,180,71,.45),inset 0 1px 0 rgba(255,255,255,.7);transition:transform .12s}
+  .btn:active{transform:translateY(2px) scale(.96)}
+  .hint{color:rgba(255,255,255,.45);font-size:.82rem;margin-top:26px}
+  #hud{position:fixed;top:0;left:0;right:0;padding:calc(env(safe-area-inset-top) + 10px) 14px 0;z-index:8;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none}
+  .card{background:rgba(255,255,255,.08);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:6px 14px;display:flex;flex-direction:column;align-items:center;min-width:70px}
+  .card .l{font-size:.6rem;letter-spacing:1.4px;color:#E8D0B0;font-weight:700}
+  .card .v{font-size:1.25rem;font-weight:800;color:#FFD93D;line-height:1.2}
+  #stageC{background:rgba(255,217,61,.12);border-color:rgba(255,217,61,.35)}
+  #stageC .v{color:#fff}
+  #knives{display:flex;gap:4px;margin-top:8px;justify-content:center;min-height:22px}
+  .kn{width:6px;height:20px;border-radius:3px;background:linear-gradient(180deg,#C8CDD8 40%,#8B5A2B 40%);box-shadow:0 1px 3px rgba(0,0,0,.4)}
+  .kn.used{opacity:.18}
+  #combo{position:fixed;top:26%;left:50%;transform:translateX(-50%);font-weight:900;font-size:1.5rem;color:#FFD93D;text-shadow:0 0 16px rgba(255,180,71,.9);opacity:0;pointer-events:none;z-index:9}
+  #combo.pop{animation:cp .9s ease forwards}
+  @@keyframes cp{0%{opacity:0;transform:translate(-50%,14px) scale(.6)}25%{opacity:1;transform:translate(-50%,0) scale(1.12)}100%{opacity:0;transform:translate(-50%,-24px) scale(1)}}
+  #banner{position:fixed;top:40%;left:0;right:0;text-align:center;font-size:2rem;font-weight:900;letter-spacing:4px;color:#3DDC97;text-shadow:0 2px 14px rgba(61,220,151,.7);opacity:0;pointer-events:none;z-index:9}
+  #banner.show{animation:bn 1.2s ease forwards}
+  @@keyframes bn{0%{opacity:0;transform:scale(.7)}20%{opacity:1;transform:scale(1.05)}80%{opacity:1}100%{opacity:0;transform:scale(1)}}
+  #cv{position:absolute;left:50%;top:0;transform:translateX(-50%);z-index:6;touch-action:none}
+  #overV{position:fixed;inset:0;z-index:20;background:rgba(20,10,5,.78);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .4s;pointer-events:none}
+  #overV.show{opacity:1;pointer-events:auto}
+  .overCard{width:84%;max-width:380px;background:rgba(52,32,20,.96);border-radius:28px;padding:30px 24px;text-align:center;border:2.5px solid #FFD93D;box-shadow:0 12px 30px rgba(0,0,0,.5),0 0 30px rgba(255,217,61,.25)}
+  .overT{color:#FFD93D;font-size:2rem;font-weight:900;letter-spacing:3px;margin-bottom:20px}
+  .overSR{display:flex;gap:12px;margin-bottom:14px}
+  .overSB{flex:1;background:rgba(255,255,255,.07);border-radius:16px;padding:12px 6px;border:1px solid rgba(255,217,61,.2)}
+  .overL{color:rgba(255,255,255,.55);font-size:.6rem;font-weight:700;letter-spacing:1.2px;margin-bottom:4px}
+  .overV{font-size:1.7rem;font-weight:900;color:#FFD93D}
+  .overS{color:rgba(255,255,255,.6);font-size:.85rem;margin-bottom:22px}
+</style>
+</head>
+<body>
+<div id="bg"></div><div class="orb" id="o1"></div><div class="orb" id="o2"></div>
+<div id="app">
+  <canvas id="cv"></canvas>
+  <div id="hud">
+    <div class="card"><div class="l">SCORE</div><div class="v" id="scoreV">0</div></div>
+    <div class="card" id="stageC"><div class="l">STAGE</div><div class="v" id="stageV">1</div></div>
+    <div class="card"><div class="l">BEST</div><div class="v" id="bestV">0</div></div>
+  </div>
+  <div id="knives"></div>
+  <div id="combo"></div>
+  <div id="banner"></div>
 
-Welcome to your new app.
+  <div class="screen" id="startScreen">
+    <div class="logo">🔪</div>
+    <h1 class="title">KNIFE HIT THROW</h1>
+    <p class="subtitle">Tap to throw. Stick them all. Don't hit a knife!</p>
+    <div class="bestRow">BEST SCORE<span id="startBest">0</span></div>
+    <button id="startBtn" class="btn">START</button>
+    <p class="hint">Slice apples 🍎 for bonus. Stage up for faster spins.</p>
+  </div>
+
+  <div id="overV">
+    <div class="overCard">
+      <div class="overT">GAME OVER</div>
+      <div class="overSR">
+        <div class="overSB"><div class="overL">SCORE</div><div class="overV" id="overScore">0</div></div>
+        <div class="overSB"><div class="overL">BEST</div><div class="overV" id="overBest">0</div></div>
+      </div>
+      <div class="overS">The knife hit another knife!</div>
+      <button id="againBtn" class="btn">PLAY AGAIN</button>
+    </div>
+  </div>
+</div>
+<script>
+'use strict';
+(function(){
+/* ================= Constants ================= */
+const TAU=Math.PI*2;
+const STAGE_KNIVES=[6,7,8,9,10,11,12];      // knives per stage
+const STAGE_SPEED=[1.6,1.9,2.2,2.4,2.7,3.0,3.4]; // rad/s
+const KNIFE_W=14;                            // knife half-width for angular collision
+const APPLE_BONUS=25;
+const APPLE_COMBO_BONUS=15;
+
+/* ================= State ================= */
+let S={phase:'start',score:0,best:0,stage:1,
+  logR:0,logX:0,logY:0,rot:0,baseSpin:1.6,spinDir:1,modAmp:0,modFreq:0,modPh:0,
+  knives:[],stuck:[],apples:[],inFlight:false,knivesLeft:0,
+  particles:[],wobble:0,breakT:0,shakeT:0,last:0,appleCombo:0};
+
+/* ================= DOM ================= */
+const $=function(id){return document.getElementById(id);};
+const cv=$('cv'),ctx=cv.getContext('2d');
+$('startBest').textContent=S.best;
+try{S.best=parseInt(localStorage.getItem('kht_best')||'0',10)||0;}catch(e){}
+$('startBest').textContent=S.best;$('bestV').textContent=S.best;
+
+function playSound(name){ /* reserved: wire audio here */ }
+function vibrate(ms){ if(navigator.vibrate){try{navigator.vibrate(ms);}catch(e){}} }
+
+/* ================= Layout ================= */
+function resize(){
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  const w=window.innerWidth,h=window.innerHeight;
+  cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);
+  cv.style.width=w+'px';cv.style.height=h+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  S.logR=Math.min(w*0.26,120);
+  S.logX=w/2;S.logY=Math.max(h*0.30,170);
+}
+window.addEventListener('resize',resize);
+window.addEventListener('orientationchange',function(){setTimeout(resize,120);});
+
+/* ================= Stage setup ================= */
+function setupStage(n){
+  const i=Math.min(n-1,STAGE_KNIVES.length-1);
+  S.knivesLeft=STAGE_KNIVES[i]+Math.floor((n-1)/STAGE_KNIVES.length);
+  S.baseSpin=STAGE_SPEED[i]*Math.pow(1.04,n-STAGE_KNIVES.length>0?n-STAGE_KNIVES.length:0);
+  S.spinDir=Math.random()<0.5?-1:1;
+  S.modAmp=n>=3?0.4+Math.random()*0.5:0;   // stages 3+: speed modulation
+  S.modFreq=1.2+Math.random()*1.4;
+  S.modPh=Math.random()*TAU;
+  S.rot=Math.random()*TAU;
+  S.stuck=[];S.apples=[];S.inFlight=false;S.breakT=0;  // clear the break animation flag or stage 2+ can never throw
+  // apples: 1 at stage 1-2, 2 later
+  const na=n<=2?1:2;
+  for(let a=0;a<na;a++){
+    let ang,ok=false,guard=0;
+    while(!ok&&guard++<40){ang=Math.random()*TAU;ok=S.apples.every(p=>Math.abs(angDiff(ang,p.a))>0.55);}
+    S.apples.push({a:ang,alive:true});
+  }
+  renderKnifeIcons();
+  $('stageV').textContent=n;
+}
+function angDiff(a,b){let d=Math.abs(a-b)%TAU;if(d>Math.PI)d=TAU-d;return d;}
+
+function renderKnifeIcons(){
+  const el=$('knives');el.innerHTML='';
+  for(let i=0;i<S.knivesLeft;i++){const d=document.createElement('div');d.className='kn';el.appendChild(d);}
+}
+function useKnifeIcon(){
+  const ks=$('knives').children;
+  for(let i=ks.length-1;i>=0;i--){if(!ks[i].classList.contains('used')){ks[i].classList.add('used');break;}}
+}
+
+/* ================= Throw ================= */
+function throwKnife(){
+  if(S.phase!=='play'||S.inFlight||S.knivesLeft<=0||S.breakT>0)return;
+  S.inFlight=true;
+  // start just above the bottom of the screen so the flight is visible
+  const y0=Math.max(80,window.innerHeight-110-(S.logY+S.logR));
+  S.knives.push({y:y0,speed:1500});       // y = px above the log's bottom edge
+  useKnifeIcon();
+  playSound('throw');vibrate(10);
+}
+
+function landKnife(){
+  const k=S.knives.shift();
+  // The knife always strikes the log's bottom point: world angle PI/2 (atan2, y-down).
+  // stuck/apple angles are LOCAL (they rotate with the log), so compare in local space.
+  const local=((Math.PI/2-S.rot)%TAU+TAU)%TAU;
+  // collision with stuck knives
+  for(const st of S.stuck){
+    if(angDiff(local,st.a)<(KNIFE_W/S.logR)){
+      gameOver();return;
+    }
+  }
+  S.stuck.push({a:local,wob:1});
+  S.inFlight=false;
+  S.knivesLeft--;
+  // apple check
+  for(const ap of S.apples){
+    if(ap.alive&&angDiff(local,ap.a)<0.28){
+      ap.alive=false;S.appleCombo++;
+      const pts=APPLE_BONUS+(S.appleCombo-1)*APPLE_COMBO_BONUS;
+      S.score+=pts;bumpScore();
+      spawnBurst(S.logX,S.logY+S.logR,'#FF6B9D',12);
+      showCombo(S.appleCombo>1?('APPLE x'+S.appleCombo+' +'+pts):('APPLE +'+pts));
+      playSound('apple');vibrate(25);
+    }
+  }
+  if(S.knivesLeft<=0){
+    // stage clear: break the log
+    S.breakT=performance.now();
+    spawnLogShards();
+    playSound('break');vibrate(60);
+    setTimeout(function(){
+      S.stage++;S.score+=50;bumpScore();
+      showBanner('STAGE '+S.stage);
+      playSound('stage');
+      setupStage(S.stage);
+    },900);
+  }else{
+    playSound('stick');vibrate(8);
+  }
+  updateHUD();
+}
+
+/* ================= Particles ================= */
+function spawnBurst(x,y,color,n){
+  for(let i=0;i<n;i++){
+    const a=Math.random()*TAU,sp=80+Math.random()*160;
+    S.particles.push({x:x,y:y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-60,r:2+Math.random()*4,c:color,life:500+Math.random()*250,b:performance.now()});
+  }
+}
+function spawnLogShards(){
+  for(let i=0;i<22;i++){
+    const a=Math.random()*TAU,sp=120+Math.random()*220;
+    S.particles.push({x:S.logX,y:S.logY,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-120,r:4+Math.random()*7,c:i%2?'#8B5A2B':'#B07A45',life:800+Math.random()*300,b:performance.now(),sq:true});
+  }
+  S.shakeT=performance.now();
+}
+function updateParticles(dt){
+  const now=performance.now();
+  S.particles=S.particles.filter(function(p){
+    const t=(now-p.b)/p.life;if(t>=1)return false;
+    p.x+=p.vx*dt/1000;p.y+=p.vy*dt/1000;p.vy+=500*dt/1000;return true;
+  });
+}
+
+/* ================= Game flow ================= */
+function startGame(){
+  S.phase='play';S.score=0;S.stage=1;S.appleCombo=0;S.particles=[];S.breakT=0;S.knives=[];
+  $('startScreen').classList.add('hidden');$('overV').classList.remove('show');
+  resize();setupStage(1);updateHUD();
+  S.last=performance.now();
+  if(!S.rafStarted){S.rafStarted=true;requestAnimationFrame(loop);}
+}
+function gameOver(){
+  S.phase='over';
+  spawnBurst(S.logX,S.logY+S.logR,'#FF5252',20);
+  S.shakeT=performance.now();
+  playSound('crack');playSound('over');vibrate(140);
+  if(S.score>S.best){S.best=S.score;try{localStorage.setItem('kht_best',String(S.best));}catch(e){}}
+  $('overScore').textContent=S.score;$('overBest').textContent=S.best;
+  $('startBest').textContent=S.best;$('bestV').textContent=S.best;
+  setTimeout(function(){$('overV').classList.add('show');},350);
+}
+
+/* ================= Loop ================= */
+function loop(now){
+  const dt=Math.min((now-S.last)/1000,0.05);S.last=now;
+  if(S.phase==='play'||S.phase==='over'){
+    // rotation with modulation
+    if(S.breakT===0){
+      let w=S.baseSpin*S.spinDir;
+      if(S.modAmp>0){w*=1+S.modAmp*Math.sin(now/1000*S.modFreq+S.modPh);}
+      S.rot=(S.rot+w*dt)%TAU;
+      if(S.rot<0)S.rot+=TAU;
+    }
+    // flight
+    if(S.inFlight&&S.knives.length){
+      const k=S.knives[0];
+      k.y-=k.speed*dt;
+      if(k.y<=0){landKnife();}   // tip reaches the log's bottom edge
+    }
+    // stuck wobble decay
+    for(const st of S.stuck){if(st.wob>0)st.wob=Math.max(0,st.wob-dt*4);}
+    updateParticles(dt);
+    render(now);
+  }
+  requestAnimationFrame(loop);
+}
+
+/* ================= Render ================= */
+function render(now){
+  const w=window.innerWidth,h=window.innerHeight;
+  ctx.clearRect(0,0,w,h);
+  // shake
+  let sx=0,sy=0;
+  if(S.shakeT&&now-S.shakeT<300){const m=(300-(now-S.shakeT))/300*6;sx=(Math.random()-0.5)*m;sy=(Math.random()-0.5)*m;}
+  ctx.save();ctx.translate(sx,sy);
+  const breaking=S.breakT&&now-S.breakT<900;
+  const logAlpha=breaking?Math.max(0,1-(now-S.breakT)/900):1;
+  // log
+  if(logAlpha>0){
+    ctx.save();ctx.globalAlpha=logAlpha;ctx.translate(S.logX,S.logY);
+    const wob=S.stuck.length?S.stuck[S.stuck.length-1].wob*0.03:0;
+    ctx.rotate(Math.sin(now/30)*wob);
+    // body
+    const g=ctx.createRadialGradient(-S.logR*0.3,-S.logR*0.35,S.logR*0.2,0,0,S.logR);
+    g.addColorStop(0,'#C08050');g.addColorStop(0.7,'#9A6238');g.addColorStop(1,'#7A4A28');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,S.logR,0,TAU);ctx.fill();
+    // grain rings
+    ctx.strokeStyle='rgba(90,55,25,0.5)';ctx.lineWidth=2;
+    for(let r=S.logR*0.25;r<S.logR;r+=S.logR*0.22){ctx.beginPath();ctx.arc(0,0,r,0,TAU);ctx.stroke();}
+    ctx.beginPath();ctx.arc(0,0,S.logR*0.1,0,TAU);ctx.stroke();
+    // rim
+    ctx.strokeStyle='#5E3A1E';ctx.lineWidth=4;ctx.beginPath();ctx.arc(0,0,S.logR-2,0,TAU);ctx.stroke();
+    // rotate group for stuck items
+    ctx.save();ctx.rotate(S.rot);
+    // stuck knives: blade into log, handle out
+    for(const st of S.stuck){
+      ctx.save();ctx.rotate(st.a);
+      drawKnifeShape(S.logR-4,1);
+      ctx.restore();
+    }
+    // apples
+    for(const ap of S.apples){
+      if(!ap.alive)continue;
+      ctx.save();ctx.rotate(ap.a);ctx.translate(S.logR+2,0);
+      ctx.font='26px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('🍎',0,0);
+      ctx.restore();
+    }
+    ctx.restore();ctx.restore();
+  }
+  // flying knife
+  if(S.inFlight&&S.knives.length){
+    const k=S.knives[0];
+    const ky=S.logY+k.y+S.logR;
+    ctx.save();ctx.translate(S.logX,ky);
+    drawKnifeShape(0,-1);
+    ctx.restore();
+  }
+  // particles
+  for(const p of S.particles){
+    const t=(performance.now()-p.b)/p.life;
+    ctx.globalAlpha=1-t;ctx.fillStyle=p.c;
+    if(p.sq){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(t*8);ctx.fillRect(-p.r/2,-p.r/2,p.r,p.r);ctx.restore();}
+    else{ctx.beginPath();ctx.arc(p.x,p.y,p.r*(1-t*0.6),0,TAU);ctx.fill();}
+    ctx.globalAlpha=1;
+  }
+  ctx.restore();
+}
+function drawKnifeShape(dist,dir){
+  // Shape is authored pointing UP (tip at y=-30, handle below).
+  // dir=1: stuck — at +x radial slot inside the rotate(st.a) group; rotate -90deg
+  //        so the tip points inward (-x) and the handle sticks out of the wood.
+  // dir=-1: flying — no transform: tip sits 30px above the anchor, pointing up.
+  ctx.save();
+  if(dir===1){ctx.translate(dist,0);ctx.rotate(-Math.PI/2);}
+  // handle
+  ctx.fillStyle='#8B5A2B';roundRect(-5,10,10,26,4);ctx.fill();
+  // guard
+  ctx.fillStyle='#C8A24A';roundRect(-9,6,18,6,2);ctx.fill();
+  // blade
+  const g=ctx.createLinearGradient(-6,0,6,0);
+  g.addColorStop(0,'#E8ECF4');g.addColorStop(0.5,'#FFFFFF');g.addColorStop(1,'#AEB6C6');
+  ctx.fillStyle=g;ctx.beginPath();
+  ctx.moveTo(-6,6);ctx.lineTo(6,6);ctx.lineTo(6,-18);ctx.quadraticCurveTo(0,-30,-6,-18);ctx.closePath();ctx.fill();
+  ctx.strokeStyle='rgba(120,130,150,0.6)';ctx.lineWidth=1;ctx.stroke();
+  ctx.restore();
+}
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+}
+
+/* ================= HUD feedback ================= */
+function updateHUD(){$('scoreV').textContent=S.score;$('bestV').textContent=Math.max(S.best,S.score);}
+let sT;function bumpScore(){const e=$('scoreV');e.style.transition='transform .15s';e.style.transform='scale(1.3)';clearTimeout(sT);sT=setTimeout(function(){e.style.transform='scale(1)';},150);}
+let cT;function showCombo(txt){const c=$('combo');c.textContent=txt;c.classList.remove('pop');void c.offsetWidth;c.classList.add('pop');}
+function showBanner(txt){const b=$('banner');b.textContent=txt;b.classList.remove('show');void b.offsetWidth;b.classList.add('show');}
+
+/* ================= Input ================= */
+function onTap(e){
+  /* only intercept while playing: preventDefault on touchstart would
+     swallow the synthetic click that START/RETRY buttons rely on */
+  if(S.phase!=='play') return;
+  if(e&&e.preventDefault)e.preventDefault();
+  throwKnife();
+}
+document.addEventListener('touchstart',onTap,{passive:false});
+document.addEventListener('mousedown',onTap);
+document.addEventListener('touchmove',function(e){e.preventDefault();},{passive:false});
+document.addEventListener('gesturestart',function(e){e.preventDefault();});
+document.addEventListener('contextmenu',function(e){e.preventDefault();});
+// buttons should not double-fire throw
+$('startBtn').addEventListener('click',function(e){e.stopPropagation();startGame();});
+$('againBtn').addEventListener('click',function(e){e.stopPropagation();startGame();});
+
+/* ================= Init ================= */
+resize();
+})();
+</script>
+</body>
+</html>
